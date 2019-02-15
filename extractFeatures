@@ -1,6 +1,6 @@
-% newOxQUIP Walk Feature Extract
-% J. Prince
-% 14/04/2018
+%% John Prince (c)
+% john.prince@eng.ox.ac.uk
+% Script to Extract Features from the Mobility Lab Walking Activity
 load('metaData.mat')
 
 walkFeatures = NaN(length(allWalkInstances),108);
@@ -38,4 +38,4 @@ for pat=1:length(allWalkInstances)
     end
 end
 
-save('OxQUIP Walk Feature Matrix.mat','allWalkInstances','walkFeatures','walkHeaders')
+save('Walk Feature Matrix.mat','metaData','walkFeatures','walkHeaders')
