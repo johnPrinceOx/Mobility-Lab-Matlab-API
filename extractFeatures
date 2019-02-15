@@ -1,0 +1,41 @@
+% newOxQUIP Walk Feature Extract
+% J. Prince
+% 14/04/2018
+load('metaData.mat')
+
+walkFeatures = NaN(length(allWalkInstances),108);
+for pat=1:length(allWalkInstances)
+    
+    % Progress Feedback
+    patient = allWalkInstances(pat,1);
+    patient = cell2str(patient);
+    patient = patient(3:end-3);
+    disp(['Analysing Patient ' patient ': Instance Number ' num2str(pat) ' of ' num2str(length(allWalkInstances))])
+    
+    % Load the raw csv
+    thisFile = allWalkInstances(pat,5);
+    thisFile = cell2str(thisFile);
+    thisFile = thisFile(3:end-3);
+    [num, txt, raw] = xlsread(thisFile);
+    
+    if size(num,2)< 15
+        
+    else
+        % Get the Features
+        featuresMean = num(4:57,3)';
+        featuresStd = num(4:57,4)';
+        theseFeatures = [featuresMean, featuresStd];
+        
+        % Get the Feature Headers
+        if pat == 1
+            meanHeaders = txt(11:64,1);
+            stdHeaders = strcat(meanHeaders,' STD');
+            walkHeaders = [meanHeaders;stdHeaders];
+        end
+        
+        % Store
+        walkFeatures(pat,:) = theseFeatures;
+    end
+end
+
+save('OxQUIP Walk Feature Matrix.mat','allWalkInstances','walkFeatures','walkHeaders')
