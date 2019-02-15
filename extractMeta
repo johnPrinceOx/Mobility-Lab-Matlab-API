@@ -1,14 +1,16 @@
-%% New OxQUIP Raw Data Analysis: GAIT
+%% John Prince (c)
+% john.prince@eng.ox.ac.uk
+% Script to Extract Metadata from Mobility Lab Export
 
-fileList = dir('*.csv');
+fileList = dir('*.csv'); % Get all csvs from the current directory
 
 %% First go through all files and get subjectIDs, testType, date
 
-basicData = [];
-groupLabels = [];
+basicData = []; % This is for the metadata
+groupLabels = []; % This is study specific and is optional
 
 for f = 1:length(fileList)
-    f
+    f % to track progress
     thisF = fileList(f).name;
     [num, txt, raw] = xlsread(thisF);
     
@@ -24,18 +26,6 @@ for f = 1:length(fileList)
     tType = txt(5,2);
     tType = cell2str(tType);
     
-    if (contains(tType,'Walk') | contains(tType,'walk'))
-        tType = 'W';
-    elseif (contains(tType,'Sway') | contains(tType,'sway'))
-        tType = 'S';
-    elseif (contains(tType,'TUG'))
-        tType = 'T';
-    elseif (contains(tType,'Pull') | contains(tType,'pull'))
-        tType = 'P';
-    else
-        tType = 'NAN';
-    end
-    
     % date
     d = txt(3,2);
     d = cell2str(d);
@@ -46,90 +36,19 @@ for f = 1:length(fileList)
     % csv filename
     fName = thisF;
     
-    % Notes/ Medication
+    % Notes
     state = txt(6,2);
     state=cell2str(state{1,1});
     state = state(2:end-1);
     
-    % save the basic data
+    % Save the basic data
     basicData = cat(1,basicData, {id, tType, dNum, state,fName});
     groupLabels = cat(1,groupLabels,grp);
 end
-
-%% Now for the actual processing bit...Lets just do the gait tests first
 
 [sortedData, idx] = sortrows(basicData);
 sortedLabels = groupLabels(idx);
 allPats = unique(basicData(:,1));
 
-allWalkInstances = [];
-
-for pat = 1:length(allPats)
-    
-    thisPat = allPats(pat);
-    
-    walkIdxs = find(strcmp(thisPat, sortedData(:,1)) & strcmp(sortedData(:,2),'W'));
-    walkInstances = sortedData(walkIdxs,:);
-    patGrp = sortedLabels(walkIdxs(1));
-    
-    if length(walkIdxs)==1
-        updatedVis = cellstr(num2str(1));
-    else
-        % Sort the dates in order
-        visitDates = str2double(walkInstances(:,3));
-        hld = [1:length(visitDates)]';
-        sortedDates = sortrows([visitDates, hld]);
-        newOrder = sortedDates(:,2);
-        walkInstances = walkInstances(newOrder,:);
-        
-        % Method to automatically assign visit number
-        visCount = 1;
-        latestVisit = 1;
-        allowance = 35; % Wiggle room
-        
-        for vis = 2:length(visitDates)
-            diffDays = abs(daysact(sortedDates(vis), sortedDates(vis - 1)));
-            
-            if ( diffDays>(allowance) )
-                latestVisit = latestVisit + 1;
-                visCount = cat(1,visCount, latestVisit);
-            else
-                visCount = cat(1,visCount, latestVisit);
-            end
-        end
-        
-        % For simplicity, if two walking tests are done on the same visit, we assume it is because the first test was bad, so we delete it
-        % UNLESS it is a group 2 of 4 on repeated visit!
-        
-        if patGrp~=2 && patGrp~=4
-            uniqueVis = unique(visCount);
-            properVis = [];
-            for vis=1:length(uniqueVis)
-                thisVis = uniqueVis(vis);
-                theseVis = find(visCount==thisVis);
-                
-                if length(theseVis)>1
-                    properVis = cat(1,properVis,theseVis(1));
-                else
-                    properVis = cat(1,properVis,theseVis);
-                end
-            end
-            
-            updatedVis = cellstr(num2str(visCount(properVis)));
-            walkInstances = walkInstances(properVis,:);
-            
-        else
-            updatedVis = cellstr(num2str(visCount));
-            theseVis = find(visCount);
-            walkInstances = walkInstances(theseVis,:);
-        end
-        
-        %allWalkInstances = cat(1,allWalkInstances,[walkInstances, updatedVis]);
-    end
-    
-    allWalkInstances = cat(1,allWalkInstances,[walkInstances, updatedVis]);
-    
-end
-
-save('Final Final OxQUIP All Walk Visit Labels.mat','allWalkInstances')
+save('metaData.mat','sortedData')
 
